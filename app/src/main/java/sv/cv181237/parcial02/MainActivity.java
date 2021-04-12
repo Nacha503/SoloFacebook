@@ -14,12 +14,16 @@ import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.squareup.picasso.Picasso;
 
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ImageView;
+import android.widget.TextView;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
@@ -29,10 +33,18 @@ public class MainActivity extends AppCompatActivity {
     private CallbackManager callbackManager;
     private LoginButton loginButton;
 
+    private ImageView imageView;
+    private TextView textView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        textView = findViewById(R.id.txv_userName);
+        imageView = findViewById(R.id.imgUser);
+
+
 
         loginButton = findViewById(R.id.login_button);
 
@@ -74,21 +86,34 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onCompleted(JSONObject object, GraphResponse response) {
                         Log.d("Demo",object.toString());
+                        try {
+                            String name = object.getString("name");
+                            String id = object.getString("id");
+                            String pic = object.getJSONObject("picture").getJSONObject("data").getString("url");
+                            textView.setText(name);
+                            Picasso.get().load(pic).into(imageView);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
 
         Bundle bundle = new Bundle();
-        bundle.putString("fields","gender,name,first_name,last_name,email");
+        bundle.putString("fields","gender,name,first_name,last_name,email,picture.width(400).height(400)");
         graphRequest.setParameters(bundle);
         graphRequest.executeAsync();
+
+
 
     }
 
     AccessTokenTracker accessToken = new AccessTokenTracker(){
         @Override
         protected void onCurrentAccessTokenChanged(AccessToken oldAccessToken, AccessToken currentAccessToken) {
-            if(currentAccessToken == null){
+            if(currentAccessToken == null){ //si el token es nulo significa que el usuario ha cerrado sesion
                 LoginManager.getInstance().logOut();
+                textView.setText("");
+                imageView.setImageResource(0);
             }
         }
     };
